@@ -1,4 +1,6 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { getTeamLogo } from "@/lib/team-logos";
 
 interface ConstructorRowProps {
   position: number;
@@ -23,6 +25,7 @@ export function ConstructorRow({
 }: ConstructorRowProps) {
   const medal = POSITION_MEDALS[position];
   const isLeader = position === 1;
+  const logo = getTeamLogo(name);
 
   return (
     <div
@@ -44,13 +47,28 @@ export function ConstructorRow({
         )}
       </div>
 
-      {/* Color bar + team name */}
+      {/* Logo + team name */}
       <div className="flex-1 min-w-0 flex items-center gap-3">
-        <div
-          className="w-1 h-8 rounded-full flex-shrink-0"
-          style={{ backgroundColor: teamColor }}
-          aria-hidden="true"
-        />
+        {/* Team logo or badge */}
+        <div className="w-10 h-6 flex-shrink-0 flex items-center justify-center">
+          {logo.type === "image" && logo.url ? (
+            <Image
+              src={logo.url}
+              width={40}
+              height={24}
+              alt={name}
+              unoptimized
+              className="object-contain w-10 h-6"
+            />
+          ) : (
+            <span
+              className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-black tracking-wider text-white leading-none"
+              style={{ backgroundColor: logo.color }}
+            >
+              {logo.text}
+            </span>
+          )}
+        </div>
         <p className="text-sm font-semibold text-white truncate">{name}</p>
       </div>
 

@@ -3,94 +3,124 @@ export interface DriverPhoto {
   carImage: string;
 }
 
-const BASE_HEADSHOT =
-  "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/2026";
-const BASE_CAR =
-  "https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2026";
+// URLs verificadas desde la API de OpenF1 (formato correcto con transform/1col/image.png)
+const CDN = "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers";
+const CAR_CDN = "https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2026";
 
-function headshot(code: string, firstName: string, lastName: string): string {
-  return `${BASE_HEADSHOT}/${code}01_${firstName}_${lastName}/${firstName}_${lastName}-Profile.avif`;
-}
-
-function car(teamSlug: string): string {
-  return `${BASE_CAR}/${teamSlug}.png`;
+function h(dir: string, code: string, first: string, last: string): string {
+  return `${CDN}/${dir}/${code}_${first}_${last}/${code.toLowerCase()}.png.transform/1col/image.png`;
 }
 
 export const DRIVER_PHOTOS: Record<string, DriverPhoto> = {
+  // Red Bull
   max_verstappen: {
-    headshot: headshot("VER", "Max", "Verstappen"),
-    carImage: car("red-bull-racing"),
+    headshot: h("M", "MAXVER01", "Max", "Verstappen"),
+    carImage: `${CAR_CDN}/red-bull-racing.png`,
   },
   yuki_tsunoda: {
-    headshot: headshot("TSU", "Yuki", "Tsunoda"),
-    carImage: car("red-bull-racing"),
+    headshot: h("Y", "YUKTSU01", "Yuki", "Tsunoda"),
+    carImage: `${CAR_CDN}/red-bull-racing.png`,
   },
+  isack_hadjar: {
+    headshot: h("I", "ISAHAD01", "Isack", "Hadjar"),
+    carImage: `${CAR_CDN}/red-bull-racing.png`,
+  },
+
+  // Ferrari
   lewis_hamilton: {
-    headshot: headshot("HAM", "Lewis", "Hamilton"),
-    carImage: car("ferrari"),
+    headshot: h("L", "LEWHAM01", "Lewis", "Hamilton"),
+    carImage: `${CAR_CDN}/ferrari.png`,
   },
   charles_leclerc: {
-    headshot: headshot("LEC", "Charles", "Leclerc"),
-    carImage: car("ferrari"),
+    headshot: h("C", "CHALEC01", "Charles", "Leclerc"),
+    carImage: `${CAR_CDN}/ferrari.png`,
   },
-  lando_norris: {
-    headshot: headshot("NOR", "Lando", "Norris"),
-    carImage: car("mclaren"),
-  },
-  oscar_piastri: {
-    headshot: headshot("PIA", "Oscar", "Piastri"),
-    carImage: car("mclaren"),
-  },
+
+  // Mercedes
   george_russell: {
-    headshot: headshot("RUS", "George", "Russell"),
-    carImage: car("mercedes"),
+    headshot: h("G", "GEORUS01", "George", "Russell"),
+    carImage: `${CAR_CDN}/mercedes.png`,
   },
   andrea_kimi_antonelli: {
-    headshot: headshot("ANT", "Andrea_Kimi", "Antonelli"),
-    carImage: car("mercedes"),
+    headshot: h("K", "ANDANT01", "Kimi", "Antonelli"),
+    carImage: `${CAR_CDN}/mercedes.png`,
   },
+  kimi_antonelli: {
+    headshot: h("K", "ANDANT01", "Kimi", "Antonelli"),
+    carImage: `${CAR_CDN}/mercedes.png`,
+  },
+
+  // McLaren
+  lando_norris: {
+    headshot: h("L", "LANNOR01", "Lando", "Norris"),
+    carImage: `${CAR_CDN}/mclaren.png`,
+  },
+  oscar_piastri: {
+    headshot: h("O", "OSCPIA01", "Oscar", "Piastri"),
+    carImage: `${CAR_CDN}/mclaren.png`,
+  },
+
+  // Aston Martin
   fernando_alonso: {
-    headshot: headshot("ALO", "Fernando", "Alonso"),
-    carImage: car("aston-martin"),
+    headshot: h("F", "FERALO01", "Fernando", "Alonso"),
+    carImage: `${CAR_CDN}/aston-martin.png`,
   },
   lance_stroll: {
-    headshot: headshot("STR", "Lance", "Stroll"),
-    carImage: car("aston-martin"),
+    headshot: h("L", "LANSTR01", "Lance", "Stroll"),
+    carImage: `${CAR_CDN}/aston-martin.png`,
   },
+
+  // Alpine
   pierre_gasly: {
-    headshot: headshot("GAS", "Pierre", "Gasly"),
-    carImage: car("alpine"),
+    headshot: h("P", "PIEGAS01", "Pierre", "Gasly"),
+    carImage: `${CAR_CDN}/alpine.png`,
   },
   jack_doohan: {
-    headshot: headshot("DOO", "Jack", "Doohan"),
-    carImage: car("alpine"),
+    headshot: h("J", "JACDOO01", "Jack", "Doohan"),
+    carImage: `${CAR_CDN}/alpine.png`,
   },
-  liam_lawson: {
-    headshot: headshot("LAW", "Liam", "Lawson"),
-    carImage: car("rb"),
+  franco_colapinto: {
+    headshot: h("F", "FRACOL01", "Franco", "Colapinto"),
+    carImage: `${CAR_CDN}/alpine.png`,
   },
-  nico_hulkenberg: {
-    headshot: headshot("HUL", "Nico", "Hulkenberg"),
-    carImage: car("kick-sauber"),
-  },
-  gabriel_bortoleto: {
-    headshot: headshot("BOR", "Gabriel", "Bortoleto"),
-    carImage: car("kick-sauber"),
-  },
-  oliver_bearman: {
-    headshot: headshot("BEA", "Oliver", "Bearman"),
-    carImage: car("haas"),
-  },
-  esteban_ocon: {
-    headshot: headshot("OCO", "Esteban", "Ocon"),
-    carImage: car("haas"),
-  },
+
+  // Williams
   alexander_albon: {
-    headshot: headshot("ALB", "Alexander", "Albon"),
-    carImage: car("williams"),
+    headshot: h("A", "ALEALB01", "Alexander", "Albon"),
+    carImage: `${CAR_CDN}/williams.png`,
   },
   carlos_sainz: {
-    headshot: headshot("SAI", "Carlos", "Sainz"),
-    carImage: car("williams"),
+    headshot: h("C", "CARSAI01", "Carlos", "Sainz"),
+    carImage: `${CAR_CDN}/williams.png`,
+  },
+
+  // Racing Bulls
+  liam_lawson: {
+    headshot: h("L", "LIALAW01", "Liam", "Lawson"),
+    carImage: `${CAR_CDN}/rb.png`,
+  },
+  arvid_lindblad: {
+    headshot: h("A", "ARVLIN01", "Arvid", "Lindblad"),
+    carImage: `${CAR_CDN}/rb.png`,
+  },
+
+  // Kick Sauber / Audi
+  nico_hulkenberg: {
+    headshot: h("N", "NICHUL01", "Nico", "Hulkenberg"),
+    carImage: `${CAR_CDN}/kick-sauber.png`,
+  },
+  gabriel_bortoleto: {
+    headshot: h("G", "GABBOR01", "Gabriel", "Bortoleto"),
+    carImage: `${CAR_CDN}/kick-sauber.png`,
+  },
+
+  // Haas
+  oliver_bearman: {
+    headshot: h("O", "OLIBEA01", "Oliver", "Bearman"),
+    carImage: `${CAR_CDN}/haas.png`,
+  },
+  esteban_ocon: {
+    headshot: h("E", "ESTOCO01", "Esteban", "Ocon"),
+    carImage: `${CAR_CDN}/haas.png`,
   },
 };

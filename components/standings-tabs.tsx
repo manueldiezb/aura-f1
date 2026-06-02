@@ -11,7 +11,12 @@ import { DriverRow } from "@/components/driver-row";
 import { ConstructorRow } from "@/components/constructor-row";
 import { getTeamColor } from "@/lib/team-colors";
 import { DRIVER_PHOTOS } from "@/lib/driver-photos";
-import type { DriverStanding, ConstructorStanding } from "@/lib/jolpica";
+import type {
+  DriverStanding,
+  ConstructorStanding,
+  LastRaceInfo,
+  RaceResultItem,
+} from "@/lib/jolpica";
 
 interface RaceResult {
   position: string;
@@ -33,6 +38,7 @@ interface StandingsTabsProps {
   constructorStandings: ConstructorStanding[];
   lastRaceResults: RaceResult[];
   lastRaceName?: string;
+  lastRaceInfo?: LastRaceInfo;
 }
 
 const TAB_VALUES = ["drivers", "constructors", "lastrace"] as const;
@@ -42,12 +48,49 @@ function isValidTab(value: string): value is TabValue {
   return (TAB_VALUES as readonly string[]).includes(value);
 }
 
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+const FINISHED_STATUSES = ["Finished", "+1 Lap", "+2 Laps", "+3 Laps"];
+
+function generateRaceSummary(info: LastRaceInfo): string[] {
+  const winner = info.results[0];
+  const p2 = info.results[1];
+  const p3 = info.results[2];
+  const fastestLapDriver = info.results.find((r) => r.fastestLap);
+  const dnfs = info.results.filter(
+    (r) => !FINISHED_STATUSES.some((s) => r.status.includes(s))
+  );
+
+  return [
+    `🏆 ${winner.driverName} (${winner.teamName}) se impuso en el ${info.raceName} con un tiempo de ${winner.timeOrStatus}.`,
+    `🥈 ${p2.driverName} completó el podio en segunda posición a ${p2.timeOrStatus} del ganador, seguido de ${p3.driverName} en tercero (${p3.timeOrStatus.startsWith("+") ? p3.timeOrStatus : "+" + p3.timeOrStatus}).`,
+    fastestLapDriver
+      ? `⚡ La vuelta rápida fue para ${fastestLapDriver.driverName}, que marcó el ritmo más veloz de la carrera.`
+      : `🔥 Fue una carrera intensa con múltiples batallas a lo largo del pelotón.`,
+    dnfs.length > 3
+      ? `💥 La carrera estuvo marcada por numerosos abandonos: ${dnfs
+          .slice(0, 3)
+          .map((r) => r.driverName.split(" ").slice(-1)[0])
+          .join(", ")} y ${dnfs.length - 3} más no pudieron terminar.`
+      : `🏎️ La mayoría de los pilotos completaron la distancia en una carrera relativamente tranquila.`,
+    `📊 Con este resultado, ${winner.driverName} suma ${winner.points} puntos vitales en el campeonato del mundo.`,
+  ];
+}
+
 export function StandingsTabs({
   defaultTab,
   driverStandings,
   constructorStandings,
   lastRaceResults,
   lastRaceName,
+  lastRaceInfo,
 }: StandingsTabsProps) {
   const router = useRouter();
   const activeTab: TabValue = isValidTab(defaultTab) ? defaultTab : "drivers";
@@ -121,70 +164,154 @@ export function StandingsTabs({
       {/* Last race tab */}
       <TabsContent value="lastrace">
         <div className="flex flex-col gap-2 mt-4">
-          {lastRaceName && (
-            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2 px-1">
-              {lastRaceName}
-            </p>
-          )}
-          {lastRaceResults.length === 0 ? (
-            <p className="text-zinc-400 text-sm text-center py-8">
-              No hay resultados disponibles.
-            </p>
-          ) : (
-            lastRaceResults.slice(0, 10).map((result) => {
-              const teamName = result.Constructor.name;
-              const teamColor = getTeamColor(teamName);
-              const driverName = `${result.Driver.givenName} ${result.Driver.familyName}`;
-              const timeOrStatus = result.Time?.time ?? result.status;
+          {lastRaceInfo ? (
+            <>
+              {/* Race header */}
+              <div className="mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-zinc-400 uppercase tracking-wide">
+                  Última carrera
+                </p>
+                <h2 className="text-lg font-black text-white mt-1">
+                  {lastRaceInfo.raceName}
+                </h2>
+                <p className="text-sm text-zinc-400">
+                  {lastRaceInfo.circuitName} · {lastRaceInfo.locality},{" "}
+                  {lastRaceInfo.country}
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {formatDate(lastRaceInfo.date)}
+                </p>
+              </div>
 
-              return (
-                <div
-                  key={result.position}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors"
-                >
-                  {/* Position */}
-                  <div className="w-7 flex-shrink-0 text-center">
-                    <span className="text-sm font-black text-white tabular-nums">
-                      {result.position}
-                    </span>
-                  </div>
-
-                  {/* Color dot + driver + team */}
-                  <div className="flex-1 min-w-0 flex items-center gap-2">
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: teamColor }}
-                      aria-hidden="true"
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-white truncate leading-tight">
-                        {driverName}
-                      </p>
-                      <p className="text-xs text-zinc-400 truncate leading-tight">
-                        {teamName}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Time / gap */}
-                  <div className="flex-shrink-0 text-right hidden sm:block">
-                    <span className="text-xs text-zinc-300 tabular-nums font-mono">
-                      {timeOrStatus}
-                    </span>
-                  </div>
-
-                  {/* Points */}
-                  <div className="w-12 flex-shrink-0 text-right">
-                    <span className="text-xs text-zinc-400 block leading-none mb-0.5 uppercase tracking-wide">
-                      PTS
-                    </span>
-                    <span className="text-sm font-black text-white tabular-nums">
-                      {result.points}
-                    </span>
-                  </div>
+              {/* Narrative summary */}
+              {lastRaceInfo.results.length > 0 && (
+                <div className="space-y-2 mb-6">
+                  {generateRaceSummary(lastRaceInfo).map((line, i) => (
+                    <p key={i} className="text-sm text-zinc-300 leading-relaxed">
+                      {line}
+                    </p>
+                  ))}
                 </div>
-              );
-            })
+              )}
+
+              {/* Results table — top 10 */}
+              {lastRaceInfo.results.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  {lastRaceInfo.results.slice(0, 10).map((result) => {
+                    const teamColor = getTeamColor(result.teamName);
+                    return (
+                      <div
+                        key={result.position}
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors"
+                      >
+                        {/* Position */}
+                        <div className="w-7 flex-shrink-0 text-center">
+                          <span className="text-sm font-black text-white tabular-nums">
+                            {result.position}
+                          </span>
+                        </div>
+
+                        {/* Color dot + driver + team */}
+                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                          <span
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: teamColor }}
+                            aria-hidden="true"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white truncate leading-tight">
+                              {result.driverName}
+                            </p>
+                            <p className="text-xs text-zinc-400 truncate leading-tight">
+                              {result.teamName}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Time / gap */}
+                        <div className="flex-shrink-0 text-right hidden sm:block">
+                          <span className="text-xs text-zinc-300 tabular-nums font-mono">
+                            {result.timeOrStatus}
+                          </span>
+                        </div>
+
+                        {/* Points */}
+                        <div className="w-12 flex-shrink-0 text-right">
+                          <span className="text-xs text-zinc-400 block leading-none mb-0.5 uppercase tracking-wide">
+                            PTS
+                          </span>
+                          <span className="text-sm font-black text-white tabular-nums">
+                            {result.points}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Fallback to old raw results when lastRaceInfo is not available */}
+              {lastRaceName && (
+                <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2 px-1">
+                  {lastRaceName}
+                </p>
+              )}
+              {lastRaceResults.length === 0 ? (
+                <p className="text-zinc-400 text-sm text-center py-8">
+                  No hay resultados disponibles.
+                </p>
+              ) : (
+                lastRaceResults.slice(0, 10).map((result) => {
+                  const teamName = result.Constructor.name;
+                  const teamColor = getTeamColor(teamName);
+                  const driverName = `${result.Driver.givenName} ${result.Driver.familyName}`;
+                  const timeOrStatus = result.Time?.time ?? result.status;
+
+                  return (
+                    <div
+                      key={result.position}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors"
+                    >
+                      <div className="w-7 flex-shrink-0 text-center">
+                        <span className="text-sm font-black text-white tabular-nums">
+                          {result.position}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: teamColor }}
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-white truncate leading-tight">
+                            {driverName}
+                          </p>
+                          <p className="text-xs text-zinc-400 truncate leading-tight">
+                            {teamName}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 text-right hidden sm:block">
+                        <span className="text-xs text-zinc-300 tabular-nums font-mono">
+                          {timeOrStatus}
+                        </span>
+                      </div>
+                      <div className="w-12 flex-shrink-0 text-right">
+                        <span className="text-xs text-zinc-400 block leading-none mb-0.5 uppercase tracking-wide">
+                          PTS
+                        </span>
+                        <span className="text-sm font-black text-white tabular-nums">
+                          {result.points}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </>
           )}
         </div>
       </TabsContent>

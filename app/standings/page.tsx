@@ -3,6 +3,7 @@ import {
   getDriverStandings,
   getConstructorStandings,
   getLastRaceResult,
+  getLastRace,
 } from "@/lib/jolpica";
 import { StandingsTabs } from "@/components/standings-tabs";
 
@@ -20,11 +21,12 @@ export default async function StandingsPage({
   const { tab } = await searchParams;
   const activeTab = typeof tab === "string" ? tab : "drivers";
 
-  const [driverStandings, constructorStandings, lastRaceResults] =
+  const [driverStandings, constructorStandings, lastRaceResults, lastRaceInfo] =
     await Promise.all([
       getDriverStandings("current"),
       getConstructorStandings("current"),
       getLastRaceResult(),
+      getLastRace(),
     ]);
 
   // Extract race name from the raw last race data for display
@@ -54,6 +56,7 @@ export default async function StandingsPage({
           constructorStandings={constructorStandings}
           lastRaceResults={lastRaceResults}
           lastRaceName={lastRaceName}
+          lastRaceInfo={lastRaceInfo ?? undefined}
         />
       </div>
     </main>
