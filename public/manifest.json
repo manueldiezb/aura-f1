@@ -1,0 +1,26 @@
+{
+  "name": "Aura F1",
+  "short_name": "Aura F1",
+  "description": "Tu compañero de viaje para seguir la Fórmula 1",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#e10600",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "travel"],
+  "lang": "es"
+}
