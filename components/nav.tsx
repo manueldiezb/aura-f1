@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Trophy, Menu } from "lucide-react";
+import { Home, Calendar, Trophy, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Inicio", icon: Home, href: "/" },
   { label: "Calendario", icon: Calendar, href: "/calendar" },
   { label: "Clasificación", icon: Trophy, href: "/standings" },
-  { label: "Más", icon: Menu, href: "#" },
+  { label: "Galería", icon: Camera, href: "/gallery" },
 ] as const;
 
 export function Nav() {
@@ -22,7 +22,7 @@ export function Nav() {
           const isActive =
             href === "/"
               ? pathname === "/"
-              : href !== "#" && pathname.startsWith(href);
+              : pathname.startsWith(href);
 
           return (
             <Link
