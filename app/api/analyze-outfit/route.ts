@@ -50,6 +50,17 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+function extractJson(raw: string): string {
+  // Strip markdown code fences if present
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) return fenceMatch[1].trim();
+  // Strip any leading/trailing non-JSON characters
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start !== -1 && end !== -1) return raw.slice(start, end + 1);
+  return raw.trim();
+}
+
 const client = new OpenAI();
 
 export async function POST(request: NextRequest) {
@@ -86,44 +97,48 @@ export async function POST(request: NextRequest) {
       model: "gpt-4o",
       messages: [
         {
+          role: "system",
+          content:
+            "Eres un crítico de moda experto en el paddock de Fórmula 1. Respondes ÚNICAMENTE con JSON válido, sin markdown, sin bloques de código, sin texto adicional antes o después.",
+        },
+        {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Eres el mejor crítico de moda del paddock de Fórmula 1. Tienes conocimiento enciclopédico de marcas de lujo, streetwear, sastrería y tendencias actuales. Tu análisis es preciso, detallado y específico — nunca genérico.
+              text: `Analiza exhaustivamente el outfit de la imagen. Identifica cada prenda y accesorio con el máximo nivel de detalle posible — incluyendo el modelo exacto cuando lo puedas determinar.
 
-Analiza exhaustivamente el outfit de la imagen y responde SOLO con JSON válido, sin markdown, sin texto extra:
+IMPORTANTE: Responde SOLO con el JSON siguiente, sin ningún texto extra, sin \`\`\`json, sin markdown:
 
 {
-  "person": "nombre completo si es una persona pública reconocible del mundo F1, moda o entretenimiento, si no: null",
+  "person": "nombre completo si es una persona pública reconocible, si no: null",
   "personRole": "uno de: Piloto F1 / Team Principal / Celebrity / WAG / Influencer / Modelo / Directivo F1 / Desconocido",
-  "overallRating": número del 1 al 10 (sé exigente: 10 solo para looks icónicos perfectos),
-  "aesthetic": "nombre del estilo en 2-4 palabras, específico y creativo (ej: 'Paddock Royalty', 'Tech Luxe', 'Monaco Street', 'Pit Lane Chic', 'Dark Academia Racing', 'Quiet Luxury Sport'...)",
-  "occasion": "contexto del look (ej: 'Paddock walk del Gran Premio', 'Gala de premios FIA', 'Vuelo privado', 'Hospitality VIP', 'Día casual fuera del circuito', 'Photocall de patrocinadores'...)",
-  "colorPalette": ["color1", "color2", "color3"] (máximo 4 colores principales del look, en español),
-  "styleVerdict": "frase crítica de 15-25 palabras que capture la esencia del look, con opinión experta y contexto F1 si aplica",
+  "overallRating": número entero del 1 al 10,
+  "aesthetic": "nombre del estilo en 2-4 palabras (ej: 'Paddock Royalty', 'Tech Luxe', 'Monaco Street', 'Quiet Luxury Sport')",
+  "occasion": "contexto del look (ej: 'Paddock walk del Gran Premio', 'Hospitality VIP', 'Vuelo privado')",
+  "colorPalette": ["color1", "color2", "color3"],
+  "styleVerdict": "frase crítica de 15-25 palabras sobre la esencia del look",
   "items": [
     {
-      "type": "tipo de prenda en español (chaqueta, camiseta, pantalón, zapatillas, gafas de sol, reloj, bolso, cinturón, collar, anillo...)",
-      "color": "color exacto y descriptivo (ej: 'negro azabache', 'blanco hueso', 'camel tostado', 'azul marino')",
-      "brand": "marca si es claramente identificable por logo, silueta, detalles característicos o contexto — sé específico (ej: 'Nike Air Force 1', 'Loro Piana', 'Fear of God Essentials'); null si no hay certeza",
-      "description": "descripción específica de 8-12 palabras que describa el modelo, corte y detalles visuales clave",
-      "isLuxury": true si la prenda o marca supera ~€300,
-      "material": "material/tejido probable (ej: 'lana merino', 'denim selvedge', 'cuero napa', 'algodón pima', 'nylon ripstop', 'cachemira', null si no es identificable)",
-      "fit": "silueta del ajuste (ej: 'slim fit', 'oversized', 'tailored', 'relaxed', 'cropped', 'slim tapered', null si no aplica)",
-      "priceRange": "rango de precio estimado en euros (ej: '€30-60', '€150-250', '€500-800', '€2.000+'); null si no es estimable",
-      "styleNote": "observación de estilo de 10-15 palabras: qué funciona, qué hace especial esta pieza en el contexto del look"
+      "type": "tipo de prenda en español (chaqueta, camiseta, pantalón, zapatillas, gafas de sol, reloj, bolso...)",
+      "color": "color exacto y descriptivo con acabado si procede (ej: 'montura carey sobre dorado', 'negro azabache', 'blanco hueso')",
+      "brand": "marca + modelo específico cuando sea identificable (ej: 'Ray-Ban Clubmaster Classic RB3016', 'Nike Air Force 1 Low', 'Rolex Daytona', 'Stone Island Shadow Project', 'Fear of God Essentials'); null si no hay certeza",
+      "description": "descripción técnica de 10-15 palabras: modelo, forma, materiales, detalles distintivos y colorway exacto (ej: 'lentes G-15 verde degradado en montura browline carey sobre oro')",
+      "isLuxury": true o false,
+      "material": "material específico del fabricante si es identificable (ej: 'acetato italiano', 'lana merino 18 micras', 'cuero napa', 'denim selvedge japonés', 'Gore-Tex')",
+      "fit": "silueta (ej: 'slim fit', 'oversized', 'tailored', 'relaxed', null si no aplica)",
+      "priceRange": "precio aproximado en euros (ej: '€175-200', '€500-800', '€12.000+')",
+      "styleNote": "observación experta de 10-15 palabras sobre qué hace especial esta pieza"
     }
   ]
 }
 
-Reglas:
-- Incluye TODAS las prendas y accesorios visibles (ropa, calzado, gafas, relojes, joyas, bolsos, gorras).
-- Máximo 7 items. Prioriza los más visibles y relevantes.
-- Sé específico: nada de "camiseta básica" — di "camiseta de cuello redondo oversized con dobladillo doblado".
-- Si reconoces a la persona, adapta el análisis a su estilo habitual y rol en F1.
-- El styleVerdict debe ser memorable, con voz propia, no una lista.
-- Si no puedes analizar la imagen, devuelve items vacío y overallRating: 0.`,
+Reglas estrictas:
+- Para gafas: incluye forma de montura, tipo de lente, color exacto del cristal y del armazón.
+- Para relojes: incluye referencia/modelo si es identificable, material de caja y correa.
+- Para zapatillas: incluye modelo exacto, colorway y cualquier detalle de colaboración.
+- Para ropa: incluye el corte, tejido y cualquier detalle constructivo visible (costuras, botones, solapa).
+- Máximo 7 items. Si no puedes analizar la imagen devuelve items:[] y overallRating:0.`,
             },
             {
               type: "image_url",
@@ -132,15 +147,17 @@ Reglas:
           ],
         },
       ],
-      max_tokens: 1500,
+      max_tokens: 1800,
     });
 
     const rawContent = response.choices[0]?.message?.content ?? "";
+    const cleaned = extractJson(rawContent);
 
     let result: AnalysisResult;
     try {
-      result = JSON.parse(rawContent) as AnalysisResult;
-    } catch {
+      result = JSON.parse(cleaned) as AnalysisResult;
+    } catch (parseError) {
+      console.error("JSON parse error. Raw content:", rawContent, parseError);
       return Response.json(
         { error: "Failed to parse AI response." },
         { status: 500 }
